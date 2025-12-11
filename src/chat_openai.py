@@ -1,17 +1,10 @@
 import asyncio
 import os
 import sys
-from dataclasses import dataclass, field
-from typing import List
+from dataclasses import dataclass
 
 import openai
-from click import prompt
 from dotenv import load_dotenv
-from langchain_core.messages.tool import tool_call
-from mcp import Tool
-from openai import OpenAI, responses
-from openai.types.chat import ChatCompletionMessageParam
-from pydantic import BaseModel
 
 from util import logTitle
 
@@ -34,10 +27,10 @@ class ToolCall:
 
 @dataclass
 class ChatOpenAI:
-    def __init__(self, model_name: str, tools=[], system_prompt: str = "", context: str = ""):
+    def __init__(self, model: str, tools=[], system_prompt: str = "", context: str = ""):
         api_key = os.getenv("OPENAI_API_KEY")
         base_url = os.getenv("OPENAI_BASE_URL")
-        self.model = model_name
+        self.model = model
         self.tools = tools
         self.system_prompt = system_prompt
         self.context = context
@@ -46,18 +39,17 @@ class ChatOpenAI:
         if self.system_prompt:
             self.message.append({"role": "system", "content": self.system_prompt, })
         if self.context:
-            self.message.append({"role": "user", "content": self.context, }
-                                )
+            self.message.append({"role": "user", "content": self.context, })
 
-    async def chat(self, prompt: str):
+    async def chat(self, prompt: str = None):
         logTitle("CHAT")
         if prompt:
             self.message.append({"role": "user", "content": prompt, })
-            stream = self.llm.chat.completions.create(
-                model=self.model,
-                messages=self.message,
-                tools=self.getToolsDefinition(),
-                stream=True,
+        stream = self.llm.chat.completions.create(
+            model=self.model,
+            messages=self.message,
+            tools=self.getToolsDefinition(),
+            stream=True,
             )
 
         content = ""
@@ -72,6 +64,7 @@ class ChatOpenAI:
                 sys.stdout.write(content_chunk)
             if delta.tool_calls:
                 for tool_call_chunk in delta.tool_calls:
+                    # 判断是否为第一次 tool_call
                     if len(tool_calls_list) <= tool_call_chunk.index:
                         tool_calls_list.append({"id": "", "function": {"name": "", "arguments": ""}})
                     current_call = tool_calls_list[tool_call_chunk.index]
@@ -91,16 +84,18 @@ class ChatOpenAI:
                              })
         return {
             "content": content,
-            "tool_call": tool_calls_list
+            "tool_calls": tool_calls_list
         }
 
     def appendToolResult(self, tool_call_id: str, tool_result: str):
+        """将工具执行结果添加到消息历史"""
         self.message.append({"role": "tool",
                              "tool_call_id": tool_call_id,
                              "content": tool_result
                              })
 
     def getToolsDefinition(self):
+        """将工具列表转换为OpenAI API所需的格式"""
         return [
             {
                 "type": "function",
@@ -115,6 +110,6 @@ class ChatOpenAI:
 
 if __name__ == "__main__":
         prompt = "nihao"
-        llm = ChatOpenAI("deepseek-chat")
+        llm = ChatOpenAI(model = "deepseek-chat")
         res = asyncio.run(llm.chat(prompt=prompt))
         print(res)
