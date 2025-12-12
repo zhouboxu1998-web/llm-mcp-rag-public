@@ -1,12 +1,10 @@
 import asyncio
-from typing import Optional
 from contextlib import AsyncExitStack
+from typing import Optional
 
+from dotenv import load_dotenv
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
-
-from anthropic import Anthropic
-from dotenv import load_dotenv
 
 load_dotenv()  # load environment variables from .env
 
@@ -63,6 +61,7 @@ class MCPClient:
                 "inputSchema": tool.inputSchema
             })
         print("\nConnected to server with tools:", [tool.name for tool in tools])
+
 
 if __name__ == "__main__":
     async def main():
