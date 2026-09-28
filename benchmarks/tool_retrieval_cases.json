@@ -1,0 +1,22 @@
+[
+  {"query": "读取项目目录下的文件内容", "expected_tools": ["file__read_file"]},
+  {"query": "把一段文本写入指定文件", "expected_tools": ["file__write_file"]},
+  {"query": "查看某个目录里有哪些文件", "expected_tools": ["file__list_directory"]},
+  {"query": "搜索项目目录中包含某个关键词的文件", "expected_tools": ["file__search_files"]},
+  {"query": "获取这个网页的 HTML 内容 https://example.com", "expected_tools": ["fetch__fetch"]},
+  {"query": "抓取指定 URL 的网页内容", "expected_tools": ["fetch__fetch"]},
+  {"query": "查询 SQLite 数据库里有哪些表", "expected_tools": ["sqlite__list_tables"]},
+  {"query": "查看 users 表有哪些字段", "expected_tools": ["sqlite__describe_table"]},
+  {"query": "执行只读 SQL 查询统计用户数量", "expected_tools": ["sqlite__query"]},
+  {"query": "读取一个文件，然后把结果保存到另一个文件", "expected_tools": ["file__read_file", "file__write_file"]},
+  {"query": "先获取网页内容，再根据网页内容继续处理", "expected_tools": ["fetch__fetch"]},
+  {"query": "列出数据库中的表并查询一张表的前几行", "expected_tools": ["sqlite__list_tables", "sqlite__query"]},
+  {"query": "查找项目里和 MCP 相关的文件", "expected_tools": ["file__search_files"]},
+  {"query": "把分析结果写入 report.md", "expected_tools": ["file__write_file"]},
+  {"query": "查询 SQLite 中订单总数", "expected_tools": ["sqlite__query"]},
+  {"query": "查看 README.md 文件的内容", "expected_tools": ["file__read_file"]},
+  {"query": "访问一个网站并抓取页面", "expected_tools": ["fetch__fetch"]},
+  {"query": "查看数据库 users 表结构", "expected_tools": ["sqlite__describe_table"]},
+  {"query": "从目录中搜索所有 markdown 文件", "expected_tools": ["file__search_files"]},
+  {"query": "读取配置文件并保存一份副本", "expected_tools": ["file__read_file", "file__write_file"]}
+]

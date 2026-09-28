@@ -1,0 +1,34 @@
+{
+  "servers": [
+    {
+      "name": "file",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "${PROJECT_ROOT}"
+      ],
+      "enabled": true,
+      "required": false
+    },
+    {
+      "name": "fetch",
+      "command": "uvx",
+      "args": [
+        "mcp-server-fetch"
+      ],
+      "enabled": true,
+      "required": false
+    },
+    {
+      "name": "sqlite",
+      "command": "${PYTHON}",
+      "args": [
+        "${PROJECT_ROOT}/servers/sqlite_mcp_server.py",
+        "${SQLITE_DB}"
+      ],
+      "enabled": true,
+      "required": true
+    }
+  ]
+}
