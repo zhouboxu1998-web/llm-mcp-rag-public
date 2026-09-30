@@ -8,15 +8,17 @@ import time
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 
 from dotenv import load_dotenv
 
-from llm_mcp_rag.config import Settings, load_mcp_server_configs
-from llm_mcp_rag.embeddings import EmbeddingClient
-from llm_mcp_rag.evaluation import add_synthetic_tool_decoys, aggregate, estimate_tool_context_tokens, evaluate_ranking
-from llm_mcp_rag.models import ToolBinding, VectorHit
-from llm_mcp_rag.tool_retriever import ToolRetriever
+from src.config import Settings, load_mcp_server_configs
+from src.embeddings import EmbeddingClient
+from src.evaluation import add_synthetic_tool_decoys, aggregate, estimate_tool_context_tokens, evaluate_ranking
+from src.models import ToolBinding, VectorHit
+from src.tool_retriever import ToolRetriever
 
 DEFAULT_CASES = Path(__file__).resolve().parents[1] / "benchmarks" / "tool_retrieval_cases.json"
 
@@ -38,8 +40,8 @@ def load_cases(path: Path) -> list[dict]:
 
 
 async def discover_tools(settings: Settings):
-    from llm_mcp_rag.mcp_client import MCPClient
-    from llm_mcp_rag.mcp_registry import MCPRegistry
+    from src.mcp_client import MCPClient
+    from src.mcp_registry import MCPRegistry
 
     configs = load_mcp_server_configs(settings)
     clients = [

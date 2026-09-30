@@ -12,6 +12,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+def _json_escape(value: str) -> str:
+    """把值转成可以安全放进 JSON 字符串里的片段（去掉外层引号）。"""
+    return json.dumps(value, ensure_ascii=False)[1:-1]
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -36,7 +40,7 @@ class Settings:
 
     @classmethod
     def from_env(cls) -> "Settings":
-        root = Path(__file__).resolve().parents[2]
+        root = Path(__file__).resolve().parents[1]
 
         def path_env(name: str, default: str) -> Path:
             value = Path(os.getenv(name, default))
@@ -44,7 +48,7 @@ class Settings:
 
         return cls(
             project_root=root,
-            knowledge_dir=path_env("KNOWLEDGE_DIR", "knowledge"),
+            knowledge_dir=path_env("KNOWLEDGE_DIR", "src/knowledge"),
             data_dir=path_env("DATA_DIR", "data"),
             mcp_config=path_env("MCP_CONFIG", "config/mcp_servers.json"),
             sqlite_db=path_env("SQLITE_DB", "data/demo.db"),
@@ -68,10 +72,14 @@ def load_mcp_server_configs(settings: Settings) -> list[dict]:
     with settings.mcp_config.open("r", encoding="utf-8") as f:
         raw = json.load(f)
 
+    def esc(value: str) -> str:
+        # 去掉 json.dumps 加上的外层引号
+        return json.dumps(value, ensure_ascii=False)[1:-1]
+
     variables = {
-        "PROJECT_ROOT": str(settings.project_root),
-        "PYTHON": sys.executable,
-        "SQLITE_DB": str(settings.sqlite_db),
+        "PROJECT_ROOT": esc(str(settings.project_root)),
+        "PYTHON": esc(sys.executable),
+        "SQLITE_DB": esc(str(settings.sqlite_db)),
     }
 
     result: list[dict] = []

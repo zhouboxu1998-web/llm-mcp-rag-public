@@ -1,15 +1,18 @@
 {
   "servers": [
     {
-      "name": "file",
-      "command": "npx",
+      "name": "filesystem",
+      "command": "cmd",
       "args": [
+        "/c",
+        "npx",
         "-y",
-        "@modelcontextprotocol/server-filesystem",
+        "@modelcontextprotocol/server-filesystem@2026.8.31",
         "${PROJECT_ROOT}"
       ],
-      "enabled": true,
-      "required": false
+      "env": {},
+      "required": false,
+      "enabled": true
     },
     {
       "name": "fetch",
@@ -17,8 +20,9 @@
       "args": [
         "mcp-server-fetch"
       ],
-      "enabled": true,
-      "required": false
+      "env": {},
+      "required": false,
+      "enabled": true
     },
     {
       "name": "sqlite",
@@ -27,8 +31,9 @@
         "${PROJECT_ROOT}/servers/sqlite_mcp_server.py",
         "${SQLITE_DB}"
       ],
-      "enabled": true,
-      "required": true
+      "env": {},
+      "required": true,
+      "enabled": true
     }
   ]
 }
