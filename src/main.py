@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 
 from rich.console import Console
 
@@ -13,6 +14,9 @@ console = Console()
 
 async def async_main() -> None:
     settings = Settings.from_env()
+    # 固定工作目录：Agent 通过文件工具写出的相对路径文件，始终落在项目根目录，
+    # 而不是取决于从哪个目录（如 PyCharm 的 src/）启动。
+    os.chdir(settings.project_root)
     app = Application(settings)
     await app.startup()
     try:

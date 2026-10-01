@@ -57,30 +57,29 @@ Top-K Documents        Top-K MCP Tools
 ## Project structure
 
 ```text
-config/                     MCP server definitions
-knowledge/                  Markdown knowledge base
+run.py                     Launcher: python run.py
+config/                    MCP server definitions
 servers/                   Built-in SQLite MCP server
 benchmarks/                Tool retrieval evaluation set
-scripts/                   Initialization and benchmark scripts
-src/llm_mcp_rag/           Core application
+scripts/                   Initialization, diagnostic and benchmark scripts
+src/                       Core application (Python package `src`)
+  knowledge/               Markdown knowledge base
   agent.py                 Agent loop and parallel tool execution
   query_understanding.py   Query routing
   knowledge_retriever.py   Knowledge chunk retrieval
   tool_retriever.py       Semantic MCP tool retrieval
-  mcp_client.py            MCP v2 client wrapper
+  mcp_client.py            MCP client wrapper
   mcp_registry.py          Multi-server tool registry
   vector_store.py          Small local vector index
   evaluation.py            Retrieval evaluation metrics
   runtime.py               Runtime trace
   bootstrap.py             Application assembly
-
-tests/                     Unit and regression tests
 ```
 
 ## Setup
 
 1. Create `.env` from `.env.example` and configure an OpenAI-compatible LLM / embedding endpoint.
-2. Install the project in editable mode:
+2. Install the project and its dependencies:
 
 ```bash
 pip install -e .
@@ -93,21 +92,27 @@ python scripts/init_demo_db.py
 ```
 
 4. Make sure `npx` and `uvx` are available for the optional File / Web MCP servers.
-5. Start the Agent:
+   `config/mcp_servers.json` launches the File server through `cmd /c npx`, which is **Windows-only**; on macOS / Linux change it to `"command": "npx"` and drop the `"/c"` argument.
+5. Start the Agent from the project root (any of the following):
 
 ```bash
-python -m llm_mcp_rag.main
+python run.py
+python -m src.main
+```
+
+Do not run `python src/main.py` directly: the modules use relative imports and must be run as part of the `src` package.
+
+Relative paths written by the File MCP server (e.g. `report.md`) land in the project root.
+
+Check that every MCP server can connect:
+
+```bash
+python scripts/diag_connect.py
 ```
 
 ## Evaluation
 
-Run the unit tests:
-
-```bash
-pytest -q
-```
-
-Run semantic MCP Tool Retrieval evaluation:
+Run semantic MCP Tool Retrieval evaluation (20 hand-written queries in `benchmarks/tool_retrieval_cases.json`):
 
 ```bash
 python scripts/benchmark_tool_retrieval.py --ks 1 3 5
@@ -121,6 +126,23 @@ python scripts/benchmark_tool_retrieval.py --ks 1 3 5 --scale 20 50 100
 
 Results are written to `data/tool_retrieval_benchmark.json`.
 
+Expected tool names in the cases use the `server__tool` form (e.g. `file__read_file`), so the server names in `config/mcp_servers.json` must match. Cases whose expected tools are missing from the discovered catalog are **skipped**; the script prints a warning when that happens, and metrics should only be quoted when no case was skipped.
+
 ### Experimental interpretation
 
 The All-Tools baseline has full tool coverage by construction, but its tool-definition context grows with the total number of registered tools. The semantic router trades a small retrieval step for a smaller candidate set. The main experiment therefore compares Top-K retrieval quality against context-size reduction as the tool catalog grows.
+
+## Known limitations
+
+- **Small-scale vector index**: `vector_store.py` is an in-memory brute-force cosine search built on NumPy. It is fine for a demo-sized knowledge base and tool catalog, but is not an ANN index or a persistent vector database.
+- **Dense-only knowledge retrieval**: document retrieval uses embedding similarity only, with no BM25 hybrid search, reranking or chunking-strategy comparison.
+- **Small evaluation set**: the tool retrieval benchmark has 20 hand-written queries; larger catalogs are simulated with synthetic decoy tools, so the numbers indicate a trend rather than production performance.
+- **Retrieval-level evaluation only**: tool retrieval and tool selection are measured, but final answer quality (faithfulness, correctness) is not evaluated yet.
+- **External model dependency**: results depend on the configured LLM / embedding endpoints (default: DeepSeek chat + DashScope embeddings).
+- **Windows-oriented MCP config**: see Setup step 4.
+
+## Roadmap
+
+- Add unit tests for `vector_store`, `evaluation` metrics and config parsing.
+- Add hybrid retrieval (BM25 + vector) and a reranker, compared on a larger labelled query set.
+- Add answer-quality evaluation and an HTTP API with streaming responses.

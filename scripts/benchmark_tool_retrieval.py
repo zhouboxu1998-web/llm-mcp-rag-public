@@ -28,7 +28,7 @@ def parse_args() -> argparse.Namespace:
         description="Compare all-tools context against semantic Top-K MCP tool retrieval."
     )
     parser.add_argument("--cases", type=Path, default=DEFAULT_CASES)
-    parser.add_argument("--output", type=Path, default=Path("data/tool_retrieval_benchmark.json"))
+    parser.add_argument("--output", type=Path, default=PROJECT_ROOT / "data" / "tool_retrieval_benchmark.json")
     parser.add_argument("--ks", nargs="+", type=int, default=[1, 3, 5])
     parser.add_argument("--min-score", type=float, default=-1.0)
     parser.add_argument("--scale", nargs="*", type=int, default=[], help="Optional catalog sizes, e.g. 20 50 100, using synthetic decoys")
@@ -187,6 +187,15 @@ async def main() -> None:
                     output_dir=args.output.parent,
                 )
             )
+
+        for report in reports:
+            skipped = [c for c in report["cases"] if c.get("skipped")]
+            if skipped:
+                print(
+                    f"\n[WARNING] catalog={report['tool_count']}: {len(skipped)}/{len(report['cases'])} 条用例因期望工具"
+                    "不在工具目录中被跳过，指标只基于剩余用例，请先检查 MCP server 名称是否与用例一致。",
+                    file=sys.stderr,
+                )
 
         payload = {
             "methodology": {

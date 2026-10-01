@@ -16,26 +16,15 @@ package.json
 
 # 环境变量
 .env
-.enWindows PowerShell
-Copyright (C) Microsoft Corporation. All rights reserved.
+.env.local
 
-(.venv) PS D:\HuaweiMoveData\Users\周泊旭\Desktop\agent\llm-mcp-rag> git add src/agent.py
-warning: in the working copy of 'src/agent.py', LF will be replaced by CRLF the next time Git touches it
-(.venv) PS D:\HuaweiMoveData\Users\周泊旭\Desktop\agent\llm-mcp-rag> git commit -m "add src/agent.py"
-[master e4f7998] add src/agent.py
- 1 file changed, 173 insertions(+)
- create mode 100644 src/agent.py
-(.venv) PS D:\HuaweiMoveData\Users\周泊旭\Desktop\agent\llm-mcp-rag> git push github master:master
-Enumerating objects: 60, done.
-Counting objects: 100% (55/55), done.
-Delta compression using up to 8 threads
-Compressing objects: 100% (43/43), done.
-Writing objects: 100% (46/46), 29.58 KiB | 1.64 MiB/s, done.
-Total 46 (delta 5), reused 0 (delta 0), pack-reused 0 (from 0)
-remote: Resolving deltas: 100% (5/5), completed with 2 local objects.
-To https://github.com/zhouboxu1998-web/llm-mcp-rag-public.git
-   7e1909b..e4f7998  master -> master
-(.venv) PS D:\HuaweiMoveData\Users\周泊旭\Desktop\agent\llm-mcp-rag> v.local
+# 运行时生成：演示数据库、向量索引缓存、评测结果（任意层级的 data/）
+data/
+
+# Agent 运行时通过文件工具写出的输出
+/fetch*.md
+/report*.md
+/src/fetch*.md
 
 # 系统
 .DS_Store

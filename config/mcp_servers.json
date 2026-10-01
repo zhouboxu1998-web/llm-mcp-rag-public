@@ -1,7 +1,7 @@
 {
   "servers": [
     {
-      "name": "filesystem",
+      "name": "file",
       "command": "cmd",
       "args": [
         "/c",

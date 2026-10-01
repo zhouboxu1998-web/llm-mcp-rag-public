@@ -11,7 +11,7 @@ from mcp.server import MCPServer
 READONLY_SQL = re.compile(r"^\s*(select|with|pragma\s+table_info|pragma\s+database_list)\b", re.I)
 BLOCKED_SQL = re.compile(r"\b(insert|update|delete|drop|alter|create|replace|attach|detach|vacuum|reindex)\b", re.I)
 
-db_path = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path("data/demo.db").resolve()
+db_path = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else (Path(__file__).resolve().parents[1] / "data" / "demo.db")
 db_path.parent.mkdir(parents=True, exist_ok=True)
 
 mcp = MCPServer("sqlite")

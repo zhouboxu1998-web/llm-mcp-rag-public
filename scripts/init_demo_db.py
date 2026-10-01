@@ -1,10 +1,18 @@
 from __future__ import annotations
 
+import os
 import sqlite3
 from pathlib import Path
 
-DB = Path("data/demo.db")
-DB.parent.mkdir(exist_ok=True)
+from dotenv import load_dotenv
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+load_dotenv(PROJECT_ROOT / ".env")
+
+# 与 Settings 的规则一致：相对路径基于项目根目录，而不是当前工作目录
+_db = Path(os.getenv("SQLITE_DB", "data/demo.db"))
+DB = _db if _db.is_absolute() else PROJECT_ROOT / _db
+DB.parent.mkdir(parents=True, exist_ok=True)
 
 with sqlite3.connect(DB) as conn:
     conn.executescript(

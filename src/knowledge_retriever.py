@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import sys
 import json
 from pathlib import Path
 
@@ -61,6 +62,7 @@ class KnowledgeRetriever:
 
         self.store.clear()
         if not self.knowledge_dir.exists():
+            print(f"[WARNING] 知识库目录不存在，已创建空目录：{self.knowledge_dir}（检查 .env 里的 KNOWLEDGE_DIR）", file=sys.stderr)
             self.knowledge_dir.mkdir(parents=True, exist_ok=True)
             return 0
 
@@ -72,6 +74,8 @@ class KnowledgeRetriever:
                 texts.append(chunk)
                 metadata.append({"source": str(path), "chunk": index})
 
+        if not texts:
+            print(f"[WARNING] 知识库目录下没有 .md 文件：{self.knowledge_dir}", file=sys.stderr)
         embeddings = await self.embedding_client.embed_many(texts)
         for index, (text, embedding, meta) in enumerate(zip(texts, embeddings, metadata, strict=True)):
             digest = hashlib.sha1(f"{meta['source']}::{meta['chunk']}".encode()).hexdigest()[:16]

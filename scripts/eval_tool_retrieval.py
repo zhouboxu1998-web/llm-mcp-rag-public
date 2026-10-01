@@ -6,13 +6,14 @@ import os
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from dotenv import load_dotenv
 
-from llm_mcp_rag.embeddings import EmbeddingClient
-from llm_mcp_rag.models import ToolBinding
-from llm_mcp_rag.tool_retriever import ToolRetriever
+from src.embeddings import EmbeddingClient
+from src.models import ToolBinding
+from src.tool_retriever import ToolRetriever
 
 
 CASES = [

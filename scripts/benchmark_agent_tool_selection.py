@@ -8,15 +8,16 @@ import time
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from dotenv import load_dotenv
 
-from llm_mcp_rag.config import Settings, load_mcp_server_configs
-from llm_mcp_rag.evaluation import add_synthetic_tool_decoys, estimate_tool_context_tokens
-from llm_mcp_rag.llm import LLMClient, tool_definition
-from llm_mcp_rag.models import ToolBinding
-from llm_mcp_rag.tool_retriever import ToolRetriever
+from src.config import Settings, load_mcp_server_configs
+from src.evaluation import add_synthetic_tool_decoys, estimate_tool_context_tokens
+from src.llm import LLMClient, tool_definition
+from src.models import ToolBinding
+from src.tool_retriever import ToolRetriever
 
 DEFAULT_CASES = PROJECT_ROOT / "benchmarks" / "tool_retrieval_cases.json"
 
@@ -24,7 +25,7 @@ DEFAULT_CASES = PROJECT_ROOT / "benchmarks" / "tool_retrieval_cases.json"
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="A/B benchmark for LLM MCP tool selection: all tools vs semantic Top-K.")
     parser.add_argument("--cases", type=Path, default=DEFAULT_CASES)
-    parser.add_argument("--output", type=Path, default=Path("data/agent_tool_selection_benchmark.json"))
+    parser.add_argument("--output", type=Path, default=PROJECT_ROOT / "data" / "agent_tool_selection_benchmark.json")
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--scale", nargs="*", type=int, default=[])
     return parser.parse_args()
@@ -35,8 +36,8 @@ def load_cases(path: Path) -> list[dict]:
 
 
 async def discover_tools(settings: Settings) -> tuple[object, list[ToolBinding]]:
-    from llm_mcp_rag.mcp_client import MCPClient
-    from llm_mcp_rag.mcp_registry import MCPRegistry
+    from src.mcp_client import MCPClient
+    from src.mcp_registry import MCPRegistry
 
     configs = load_mcp_server_configs(settings)
     clients = [
@@ -165,7 +166,7 @@ async def main() -> None:
     load_dotenv()
     settings = Settings.from_env()
     llm = LLMClient(settings.llm_api_key, settings.llm_base_url, settings.llm_model)
-    from llm_mcp_rag.embeddings import EmbeddingClient
+    from src.embeddings import EmbeddingClient
 
     embedding = EmbeddingClient(settings.embedding_api_key, settings.embedding_base_url, settings.embedding_model)
     registry, base_bindings = await discover_tools(settings)

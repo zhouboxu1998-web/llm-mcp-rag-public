@@ -10,11 +10,8 @@ from string import Template
 from dotenv import load_dotenv
 
 
-load_dotenv()
-
-def _json_escape(value: str) -> str:
-    """把值转成可以安全放进 JSON 字符串里的片段（去掉外层引号）。"""
-    return json.dumps(value, ensure_ascii=False)[1:-1]
+PROJECT_ROOT = Path(__file__).resolve().parents[1]  # src/config.py -> 项目根目录
+load_dotenv(PROJECT_ROOT / ".env")
 
 
 @dataclass(frozen=True)
@@ -40,7 +37,7 @@ class Settings:
 
     @classmethod
     def from_env(cls) -> "Settings":
-        root = Path(__file__).resolve().parents[1]
+        root = PROJECT_ROOT
 
         def path_env(name: str, default: str) -> Path:
             value = Path(os.getenv(name, default))
