@@ -60,7 +60,7 @@ Top-K Documents        Top-K MCP Tools
 run.py                     Launcher: python run.py
 config/                    MCP server definitions
 servers/                   Built-in SQLite MCP server
-benchmarks/                Tool retrieval evaluation set
+benchmarks/                Tool retrieval evaluation set and recorded results
 scripts/                   Initialization, diagnostic and benchmark scripts
 src/                       Core application (Python package `src`)
   knowledge/               Markdown knowledge base
@@ -128,15 +128,29 @@ Results are written to `data/tool_retrieval_benchmark.json`.
 
 Expected tool names in the cases use the `server__tool` form (e.g. `file__read_file`), so the server names in `config/mcp_servers.json` must match. Cases whose expected tools are missing from the discovered catalog are **skipped**; the script prints a warning when that happens, and metrics should only be quoted when no case was skipped.
 
-### Experimental interpretation
+### Results
 
-The All-Tools baseline has full tool coverage by construction, but its tool-definition context grows with the total number of registered tools. The semantic router trades a small retrieval step for a smaller candidate set. The main experiment therefore compares Top-K retrieval quality against context-size reduction as the tool catalog grows.
+One complete run: 20 hand-written cases, a real 18-tool catalog and synthetic decoys up to 100 tools, Top-K retrieval over the raw query (all 20 cases evaluated in every catalog).
+
+| Catalog size | Hit@1 | Hit@3 | Hit@5 | MRR | All-tools context (est. tokens) | Top-5 context (est. tokens) | Context reduction |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 18 (real) | 85% | 95% | 100% | 0.9125 | 2475 | 685 | 72.3% |
+| 20 | 85% | 95% | 100% | 0.9125 | 2562 | 682 | 73.4% |
+| 50 | 80% | 90% | 100% | 0.8725 | 3862 | 599 | 84.5% |
+| 100 | 80% | 90% | 95% | 0.8625 | 6034 | 596 | 90.1% |
+
+At 100 tools, passing only the Top-5 tools cuts the estimated tool-definition context by about 90% while the expected tool was still among the Top-5 for 19 of 20 cases. Token counts are heuristic estimates, and the reduction rises with catalog size by construction (Top-5 always passes 5 tools), so it should be read together with Hit@5 rather than on its own.
+
+The failures are analysed in [`benchmarks/results/tool_retrieval_20cases.md`](benchmarks/results/tool_retrieval_20cases.md): three of them involve functionally overlapping file tools (`read_file` / `read_text_file`), and the single Hit@5 miss at 100 tools is caused by about ten near-identical synthetic `analytics` decoys filling the Top-5.
 
 ## Known limitations
 
 - **Small-scale vector index**: `vector_store.py` is an in-memory brute-force cosine search built on NumPy. It is fine for a demo-sized knowledge base and tool catalog, but is not an ANN index or a persistent vector database.
 - **Dense-only knowledge retrieval**: document retrieval uses embedding similarity only, with no BM25 hybrid search, reranking or chunking-strategy comparison.
-- **Small evaluation set**: the tool retrieval benchmark has 20 hand-written queries; larger catalogs are simulated with synthetic decoy tools, so the numbers indicate a trend rather than production performance.
+- **Small evaluation set**: the tool retrieval benchmark has 20 hand-written queries with no held-out test split, so one case is 5 percentage points and the confidence intervals are wide (85% is roughly 64% to 95%). The numbers indicate a trend, not production performance.
+- **Synthetic decoys**: larger catalogs are padded with unrelated tools generated from eight repeated templates, so about ten decoys can be near-identical. This inflates crowding effects and is unlike a real catalog.
+- **Raw-query evaluation**: the benchmark retrieves with the raw query, while the application uses the LLM-rewritten `tool_query`; the exact production path is not measured yet.
+- **Label ambiguity**: functionally overlapping tools such as `read_file` and `read_text_file` are scored as strictly different, which lowers Hit@1.
 - **Retrieval-level evaluation only**: tool retrieval and tool selection are measured, but final answer quality (faithfulness, correctness) is not evaluated yet.
 - **External model dependency**: results depend on the configured LLM / embedding endpoints (default: DeepSeek chat + DashScope embeddings).
 - **Windows-oriented MCP config**: see Setup step 4.
@@ -144,5 +158,8 @@ The All-Tools baseline has full tool coverage by construction, but its tool-defi
 ## Roadmap
 
 - Add unit tests for `vector_store`, `evaluation` metrics and config parsing.
+- Split the benchmark into a tuning set and a held-out test set, and report strict and equivalence-aware scores.
+- Replace the repeated-template decoys with distinct ones, and add a `--rewrite` mode that evaluates the Query Understanding output.
+- Record the embedding model, parameters, date and code version in every benchmark report.
 - Add hybrid retrieval (BM25 + vector) and a reranker, compared on a larger labelled query set.
 - Add answer-quality evaluation and an HTTP API with streaming responses.
