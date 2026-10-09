@@ -49,7 +49,7 @@ Top-K Documents        Top-K MCP Tools
 - **Dual Retrieval**: Query Understanding 同时生成 knowledge query / tool query，知识检索与工具检索可并发执行。
 - **Tool Registry**: 使用 `server__tool` qualified name 解决多个 MCP Server 之间的同名工具冲突。
 - **Async execution**: LLM、Embedding 和 MCP Tool Calling 均采用异步接口；同一轮返回的独立 Tool Calls 使用 `asyncio.gather()` 并发执行。
-- **Safety boundary**: 内置只读 SQLite MCP Server；SQL 查询在 MCP Server 内再次校验，只允许只读语句。
+- **Safety boundary**: 内置只读 SQLite MCP Server，多层防护：sqlglot AST 校验（仅允许单条 SELECT / CTE 查询，语法树中出现 DML、DDL、PRAGMA、ATTACH 即拒绝，包括夹在 CTE 里的写操作）、SQLite authorizer（只放行读操作）、只读连接（`mode=ro`）、查询超时（默认 5 秒，可用 `SQL_TIMEOUT_SECONDS` 调整）和返回行数上限。
 - **Runtime trace**: 为 Query Understanding、Retrieval、LLM Round 和 Tool Execution 记录 trace、耗时及错误。
 - **Cache**: Knowledge / Tool embedding index 根据内容 fingerprint 缓存，避免每次启动重复生成向量。
 - **Evaluation**: 对 Tool Retriever 提供 Hit@K、Recall@K、MRR、平均候选数、上下文压缩率和检索延迟指标，并支持用 synthetic decoys 将 MCP catalog 扩展到 20 / 50 / 100 tools 进行压力实验。
@@ -59,9 +59,10 @@ Top-K Documents        Top-K MCP Tools
 ```text
 run.py                     Launcher: python run.py
 config/                    MCP server definitions
-servers/                   Built-in SQLite MCP server
+servers/                   Built-in SQLite MCP server and SQL guard (sql_guard.py)
 benchmarks/                Tool retrieval evaluation set and recorded results
 scripts/                   Initialization, diagnostic and benchmark scripts
+tests/                     Unit tests for the SQL guard
 src/                       Core application (Python package `src`)
   knowledge/               Markdown knowledge base
   agent.py                 Agent loop and parallel tool execution
@@ -143,6 +144,15 @@ At 100 tools, passing only the Top-5 tools cuts the estimated tool-definition co
 
 The failures are analysed in [`benchmarks/results/tool_retrieval_20cases.md`](benchmarks/results/tool_retrieval_20cases.md): three of them involve functionally overlapping file tools (`read_file` / `read_text_file`), and the single Hit@5 miss at 100 tools is caused by about ten near-identical synthetic `analytics` decoys filling the Top-5.
 
+## Tests
+
+```bash
+pip install -e ".[dev]"
+pytest -q
+```
+
+The tests cover the SQL guard without needing API keys or MCP servers: AST validation (accepted and rejected statements, including writes hidden in CTEs), the SQLite authorizer, the read-only connection, and the query timeout.
+
 ## Known limitations
 
 - **Small-scale vector index**: `vector_store.py` is an in-memory brute-force cosine search built on NumPy. It is fine for a demo-sized knowledge base and tool catalog, but is not an ANN index or a persistent vector database.
@@ -152,6 +162,7 @@ The failures are analysed in [`benchmarks/results/tool_retrieval_20cases.md`](be
 - **Raw-query evaluation**: the benchmark retrieves with the raw query, while the application uses the LLM-rewritten `tool_query`; the exact production path is not measured yet.
 - **Label ambiguity**: functionally overlapping tools such as `read_file` and `read_text_file` are scored as strictly different, which lowers Hit@1.
 - **Retrieval-level evaluation only**: tool retrieval and tool selection are measured, but final answer quality (faithfulness, correctness) is not evaluated yet.
+- **SQL guard scope**: it protects against writes, multiple statements, dangerous functions and runaway queries, but has no table or column allow-list and no per-user permissions; a read-only query can still read any table in the database. The timeout is a per-query wall-clock limit.
 - **External model dependency**: results depend on the configured LLM / embedding endpoints (default: DeepSeek chat + DashScope embeddings).
 - **Windows-oriented MCP config**: see Setup step 4.
 

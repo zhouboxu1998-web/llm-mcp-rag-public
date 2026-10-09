@@ -16,7 +16,11 @@ dependencies = [
   "pydantic>=2.9.0",
   "fastapi>=0.115.0",
   "uvicorn>=0.32.0",
+  "sqlglot>=25.0.0",
 ]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
 
 [project.scripts]
 llm-mcp-rag = "src.main:main"

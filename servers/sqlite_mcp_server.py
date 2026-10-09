@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import re
 import sqlite3
 import sys
@@ -7,9 +8,14 @@ from pathlib import Path
 
 from mcp.server import MCPServer
 
+try:
+    import sqlglot  # noqa: F401  AST 校验依赖；缺失时拒绝启动，而不是悄悄放行
+except ImportError:
+    sys.exit("sqlglot is required for SQL AST validation. Run: pip install -e .")
 
-READONLY_SQL = re.compile(r"^\s*(select|with|pragma\s+table_info|pragma\s+database_list)\b", re.I)
-BLOCKED_SQL = re.compile(r"\b(insert|update|delete|drop|alter|create|replace|attach|detach|vacuum|reindex)\b", re.I)
+import sql_guard
+
+QUERY_TIMEOUT_SECONDS = float(os.getenv("SQL_TIMEOUT_SECONDS", sql_guard.DEFAULT_TIMEOUT_SECONDS))
 
 db_path = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else (Path(__file__).resolve().parents[1] / "data" / "demo.db")
 db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -47,18 +53,15 @@ def describe_table(table_name: str) -> list[dict]:
 
 @mcp.tool()
 def query(sql: str, max_rows: int = 100) -> dict:
-    """Execute one read-only SELECT/CTE query and cap the number of returned rows."""
-    sql = sql.strip().rstrip(";")
-    if not READONLY_SQL.match(sql) or BLOCKED_SQL.search(sql):
-        raise ValueError("Only read-only SELECT/CTE/limited PRAGMA statements are allowed")
-    if ";" in sql:
-        raise ValueError("Multiple SQL statements are not allowed")
+    """Execute one read-only SELECT/CTE query (AST-validated, time-limited) and cap the returned rows."""
+    sql = sql.strip().rstrip(";").strip()
+    sql_guard.validate_sql_ast(sql)
     max_rows = max(1, min(max_rows, 500))
-    with connect() as conn:
-        cursor = conn.execute(f"SELECT * FROM ({sql}) LIMIT {max_rows}")
-        columns = [column[0] for column in cursor.description or []]
-        rows = [dict(zip(columns, row, strict=True)) for row in cursor.fetchall()]
-    return {"columns": columns, "rows": rows, "row_count": len(rows)}
+    conn = connect()
+    try:
+        return sql_guard.execute_readonly(conn, sql, max_rows, QUERY_TIMEOUT_SECONDS)
+    finally:
+        conn.close()
 
 
 if __name__ == "__main__":

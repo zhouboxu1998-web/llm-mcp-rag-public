@@ -30,7 +30,7 @@ graph TD
 5. **Chunked knowledge**: Markdown is split into bounded chunks before embedding instead of embedding an entire file as one vector.
 6. **Vector search correctness**: cosine similarity is calculated for every item, then globally sorted before Top-K truncation.
 7. **Index cache**: knowledge/tool embeddings are cached and invalidated by document/tool fingerprints or embedding-model changes.
-8. **Safe DB tool**: the local SQLite MCP server opens the database read-only and rejects mutating/multi-statement SQL.
+8. **Safe DB tool**: the local SQLite MCP server validates every query as a single SELECT/CTE using a sqlglot syntax tree, enforces read-only access again with a SQLite authorizer and a `mode=ro` connection, and interrupts queries that exceed a time limit.
 9. **Runtime trace**: query, retrieval, LLM rounds, and tool calls receive a trace ID and duration metadata.
 10. **Failure isolation**: optional MCP servers can fail without preventing the application from starting; required servers still fail fast.
 
